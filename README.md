@@ -25,8 +25,8 @@ proyecto-integrador/
 
 ## Equipo
 
-- Integrante 1
-- Integrante 2
+- Camila prieto barbosa
+- Jeiner rodas
 
 ## Estado del proyecto
 
