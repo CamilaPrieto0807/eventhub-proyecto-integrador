@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EventHub — Vive cada evento</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#" class="logo">Event<span>Hub</span></a>
+
+      <button class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+
+      <nav class="main-nav" id="mainNav">
+        <a href="#eventos">Eventos</a>
+        <a href="#categorias">Categorías</a>
+        <a href="#como-funciona">Cómo funciona</a>
+        <a href="#" class="btn btn-ghost">Ingresar</a>
+        <a href="#" class="btn btn-primary">Regístrate</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="container hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow">Conciertos · Teatro · Festivales</p>
+          <h1>Tu próximo gran momento empieza aquí.</h1>
+          <p class="hero-sub">Encuentra, reserva y vive los eventos más esperados de tu ciudad, sin filas ni complicaciones.</p>
+
+          <form class="search-box" role="search">
+            <input type="text" placeholder="Busca un evento, artista o lugar" aria-label="Buscar evento">
+            <select aria-label="Ciudad">
+              <option>Todas las ciudades</option>
+              <option>Tuluá</option>
+              <option>Cali</option>
+              <option>Bogotá</option>
+              <option>Medellín</option>
+            </select>
+            <button type="submit" class="btn btn-primary">Buscar</button>
+          </form>
+
+          <p class="hero-stats"><strong>+120</strong> eventos activos esta semana</p>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <div class="spotlight-card card-a">
+            <span class="tag tag-live">En vivo</span>
+            <p class="card-title">Festival Sonoro</p>
+            <p class="card-meta">Vie · 21:00 · Teatro Aurora</p>
+          </div>
+          <div class="spotlight-card card-b">
+            <span class="tag">Próximo</span>
+            <p class="card-title">Noche de Comedia</p>
+            <p class="card-meta">Sáb · 20:00 · Sala Norte</p>
+          </div>
+          <div class="beam"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CATEGORIAS -->
+    <section class="categorias" id="categorias">
+      <div class="container">
+        <h2>Explora por categoría</h2>
+        <div class="chip-row">
+          <button class="chip is-active">Todos</button>
+          <button class="chip">Conciertos</button>
+          <button class="chip">Teatro</button>
+          <button class="chip">Festivales</button>
+          <button class="chip">Deportes</button>
+          <button class="chip">Familiar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- EVENTOS DESTACADOS -->
+    <section class="eventos" id="eventos">
+      <div class="container">
+        <div class="section-head">
+          <h2>Eventos destacados</h2>
+          <a href="#" class="link-more">Ver todos →</a>
+        </div>
+
+        <div class="eventos-grid">
+
+          <article class="evento-card">
+            <div class="evento-media">
+              <span class="tag tag-live">En boletería</span>
+              <span class="evento-fecha">14<br>OCT</span>
+            </div>
+            <div class="evento-body">
+              <h3>Festival Sonoro 2026</h3>
+              <p class="evento-lugar">Teatro Aurora · Tuluá</p>
+              <p class="evento-precio">Desde $85.000</p>
+            </div>
+          </article>
+
+          <article class="evento-card">
+            <div class="evento-media">
+              <span class="tag">Programado</span>
+              <span class="evento-fecha">22<br>OCT</span>
+            </div>
+            <div class="evento-body">
+              <h3>Obra: El Último Acto</h3>
+              <p class="evento-lugar">Sala Norte · Cali</p>
+              <p class="evento-precio">Desde $45.000</p>
+            </div>
+          </article>
+
+          <article class="evento-card">
+            <div class="evento-media">
+              <span class="tag">Programado</span>
+              <span class="evento-fecha">02<br>NOV</span>
+            </div>
+            <div class="evento-body">
+              <h3>Noche de Comedia Stand-Up</h3>
+              <p class="evento-lugar">Auditorio Central · Bogotá</p>
+              <p class="evento-precio">Desde $30.000</p>
+            </div>
+          </article>
+
+          <article class="evento-card">
+            <div class="evento-media">
+              <span class="tag">Programado</span>
+              <span class="evento-fecha">18<br>NOV</span>
+            </div>
+            <div class="evento-body">
+              <h3>Copa Regional de Fútbol</h3>
+              <p class="evento-lugar">Estadio del Valle · Tuluá</p>
+              <p class="evento-precio">Desde $20.000</p>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- COMO FUNCIONA -->
+    <section class="como-funciona" id="como-funciona">
+      <div class="container">
+        <h2>Reservar tu entrada es así de simple</h2>
+        <div class="pasos">
+          <div class="paso">
+            <p class="paso-num">1</p>
+            <h3>Elige tu evento</h3>
+            <p>Filtra por ciudad, categoría o fecha y encuentra lo que quieres vivir.</p>
+          </div>
+          <div class="paso">
+            <p class="paso-num">2</p>
+            <h3>Haz tu reserva</h3>
+            <p>Selecciona el número de entradas y confirma en segundos.</p>
+          </div>
+          <div class="paso">
+            <p class="paso-num">3</p>
+            <h3>Disfruta el evento</h3>
+            <p>Revisa el estado de tu reserva y llega listo para la experiencia.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA REGISTRO -->
+    <section class="cta">
+      <div class="container cta-inner">
+        <div>
+          <h2>¿Organizas eventos?</h2>
+          <p>Únete como agente y administra tus propios eventos y reservas desde un solo lugar.</p>
+        </div>
+        <a href="#" class="btn btn-primary btn-lg">Regístrate como agente</a>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p class="logo">Event<span>Hub</span></p>
+      <p class="footer-copy">© 2026 EventHub — Proyecto Integrador. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
