@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi perfil — EventHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo">Event<span>Hub</span></a>
+      <button class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="main-nav" id="mainNav">
+        <a href="eventos.html">Eventos</a>
+        <a href="categorias.html">Categorías</a>
+        <a href="perfil.html" class="btn btn-ghost is-current" aria-current="page">Mi perfil</a>
+        <a href="#" class="btn btn-primary" id="cerrarSesion">Cerrar sesión</a>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <section class="page-intro">
+      <div class="container">
+        <p class="eyebrow">Tu cuenta · <span id="perfilRol"></span></p>
+        <h1 id="perfilSaludo">Mi perfil</h1>
+        <p class="page-lead">Administra tus datos y consulta tu actividad en EventHub.</p>
+      </div>
+    </section>
+    <section class="page-block">
+      <div class="container profile-layout">
+        <form class="auth-card" id="perfilForm">
+          <h2>Datos del perfil</h2>
+          <div class="field">
+            <label for="perfilNombre">Nombre completo</label>
+            <input type="text" id="perfilNombre" name="nombre" required minlength="3" autocomplete="name">
+          </div>
+          <div class="field">
+            <label for="perfilEmail">Correo electrónico</label>
+            <input type="email" id="perfilEmail" name="email" required autocomplete="email">
+          </div>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+          <p class="form-feedback" role="status" hidden></p>
+        </form>
+        <section class="profile-panel" aria-labelledby="reservasTitulo">
+          <h2 id="reservasTitulo">Mis compras y entradas</h2>
+          <ul id="reservasLista" class="reservation-list"></ul>
+          <a class="btn btn-ghost" href="eventos.html">Explorar eventos</a>
+        </section>
+        <section class="profile-panel" id="adminAforo" aria-labelledby="adminTitulo">
+          <h2 id="adminTitulo">Administración de aforo</h2>
+          <p>Define el máximo de entradas por evento. No puedes reducirlo por debajo de las ya vendidas.</p>
+          <div data-inventory-list class="inventory-list"></div>
+          <p class="form-feedback" role="status" hidden></p>
+        </section>
+        <p class="demo-notice">
+          Entorno de demostración: los datos se guardan solo en este navegador. Los roles y permisos no son seguros para producción sin un servidor.
+        </p>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a href="index.html" class="logo">Event<span>Hub</span></a>
+        <p class="footer-copy">© 2026 EventHub — Proyecto Integrador. Todos los derechos reservados.</p>
+      </div>
+    </div>
+  </footer>
+  <script src="js/main.js"></script>
+</body>
+</html>

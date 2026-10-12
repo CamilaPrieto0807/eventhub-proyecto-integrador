@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eventos — EventHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo">Event<span>Hub</span></a>
+
+      <button class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+
+      <nav class="main-nav" id="mainNav">
+        <a href="eventos.html" class="is-current" aria-current="page">Eventos</a>
+        <a href="categorias.html">Categorías</a>
+        <a href="como-funciona.html">Cómo funciona</a>
+        <a href="login.html" class="btn btn-ghost">Ingresar</a>
+        <a href="registro.html" class="btn btn-primary">Regístrate</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-intro">
+      <div class="container">
+        <p class="eyebrow">Cartelera</p>
+        <h1>Eventos</h1>
+        <p class="page-lead">Explora conciertos, teatro, festivales y más. Para comprar tus entradas, inicia sesión o crea tu cuenta.</p>
+
+        <form class="search-box" action="eventos.html" method="get" role="search">
+          <input type="search" id="buscarEvento" name="q" placeholder="Busca un evento, artista o lugar" aria-label="Buscar evento">
+          <select id="ciudadEvento" name="ciudad" aria-label="Ciudad">
+            <option value="">Todas las ciudades</option>
+            <option value="Tuluá">Tuluá</option>
+            <option value="Cali">Cali</option>
+            <option value="Bogotá">Bogotá</option>
+            <option value="Medellín">Medellín</option>
+          </select>
+          <input type="hidden" id="categoriaActual" name="categoria" value="">
+          <button type="submit" class="btn btn-primary">Buscar</button>
+        </form>
+
+        <div class="chip-row" aria-label="Filtrar por categoría">
+          <a class="chip is-active" data-chip="" href="eventos.html">Todos</a>
+          <a class="chip" data-chip="Conciertos" href="eventos.html?categoria=Conciertos">Conciertos</a>
+          <a class="chip" data-chip="Teatro" href="eventos.html?categoria=Teatro">Teatro</a>
+          <a class="chip" data-chip="Festivales" href="eventos.html?categoria=Festivales">Festivales</a>
+          <a class="chip" data-chip="Deportes" href="eventos.html?categoria=Deportes">Deportes</a>
+          <a class="chip" data-chip="Familiar" href="eventos.html?categoria=Familiar">Familiar</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="page-block">
+      <div class="container">
+        <p class="resultados" id="eventosConteo">14 eventos</p>
+
+        <div class="eventos-grid" id="eventosGrid">
+          <article class="evento-card" data-event-id="festival-sonoro" data-ciudad="Tuluá" data-categoria="Festivales">
+            <div class="evento-media">
+              <img src="assets/img/festival-sonoro.jpg" alt="Público frente al escenario de un festival de música">
+              <span class="tag tag-live">En boletería</span>
+              <span class="evento-fecha">14<br>OCT</span>
+            </div>
+            <div class="evento-body">
+              <h2>Festival Sonoro 2026</h2>
+              <p class="evento-lugar">Teatro Aurora · Tuluá</p>
+              <p class="evento-precio">Desde $85.000</p>
+              <p class="event-stock" data-stock-for="festival-sonoro"></p>
+              <a class="btn btn-primary" href="checkout.html?evento=festival-sonoro">Comprar entradas</a>
+            </div>
+          </article>
+
+          <article class="evento-card" data-event-id="ultimo-acto" data-ciudad="Cali" data-categoria="Teatro">
+            <div class="evento-media">
+              <img src="assets/img/ultimo-acto.jpg" alt="Siluetas de actores frente a un telón rojo">
+              <span class="tag">Programado</span>
+              <span class="evento-fecha">22<br>OCT</span>
+            </div>
+            <div class="evento-body">
+              <h2>Obra: El Último Acto</h2>
+              <p class="evento-lugar">Sala Norte · Cali</p>
+              <p class="evento-precio">Desde $45.000</p>
+              <p class="event-stock" data-stock-for="ultimo-acto"></p>
+              <a class="btn btn-primary" href="checkout.html?evento=ultimo-acto">Comprar entradas</a>
+            </div>
+          </article>
+
+          <article class="evento-card" data-event-id="comedia" data-ciudad="Bogotá" data-categoria="Teatro">
+            <div class="evento-media">
+              <img src="assets/img/comedia.jpg" alt="Micrófono en un escenario oscuro">
+              <span class="tag">Programado</span>
+              <span class="evento-fecha">02<br>NOV</span>
+            </div>
+            <div class="evento-body">
+              <h2>Noche de Comedia Stand-Up</h2>
+              <p class="evento-lugar">Auditorio Central · Bogotá</p>
+              <p class="evento-precio">Desde $30.000</p>
+              <p class="event-stock" data-stock-for="comedia"></p>
+              <a class="btn btn-primary" href="checkout.html?evento=comedia">Comprar entradas</a>
+            </div>
+          </article>
+
+          <article class="evento-card" data-event-id="copa-regional" data-ciudad="Tuluá" data-categoria="Deportes">
+            <div class="evento-media">
+              <img src="assets/img/futbol.jpg" alt="Balón de fútbol sobre el césped de una cancha">
+              <span class="tag">Programado</span>
+              <span class="evento-fecha">18<br>NOV</span>
+            </div>
+            <div class="evento-body">
+              <h2>Copa Regional de Fútbol</h2>
+              <p class="evento-lugar">Estadio del Valle · Tuluá</p>
+              <p class="evento-precio">Desde $20.000</p>
+              <p class="event-stock" data-stock-for="copa-regional"></p>
+              <a class="btn btn-primary" href="checkout.html?evento=copa-regional">Comprar entradas</a>
+            </div>
+          </article>
+
+          <article class="evento-card" data-event-id="jazz-parque" data-ciudad="Medellín" data-categoria="Conciertos">
+            <div class="evento-media">
+              <img src="assets/img/jazz.jpg" alt="Saxofones en un concierto de jazz">
+              <span class="tag">Programado</span>
+              <span class="evento-fecha">05<br>NOV</span>
+            </div>
+            <div class="evento-body">
+              <h2>Jazz en el Parque</h2>
+              <p class="evento-lugar">Parque de los Deseos · Medellín</p>
+              <p class="evento-precio">Desde $40.000</p>
+              <p class="event-stock" data-stock-for="jazz-parque"></p>
+              <a class="btn btn-primary" href="checkout.html?evento=jazz-parque">Comprar entradas</a>
+            </div>
+          </article>
+
+          <article class="evento-card" data-event-id="tarde-cuentos" data-ciudad="Bogotá" data-categoria="Familiar">
+            <div class="evento-media">
+              <img src="assets/img/cuentos.jpg" alt="Estantería de libros en una biblioteca">
+              <span class="tag">Programado</span>
+              <span class="evento-fecha">09<br>NOV</span>
+            </div>
+            <div class="evento-body">
+              <h2>Tarde de Cuentos</h2>
+              <p class="evento-lugar">Biblioteca Pública · Bogotá</p>
+              <p class="evento-precio">Desde $15.000</p>
+              <p class="event-stock" data-stock-for="tarde-cuentos"></p>
+              <a class="btn btn-primary" href="checkout.html?evento=tarde-cuentos">Comprar entradas</a>
+            </div>
+          </article>
+
+          <article class="evento-card" data-event-id="festival-cafe" data-ciudad="Tuluá" data-categoria="Festivales">
+            <div class="evento-media">
+              <img src="assets/img/festival-sonoro.jpg" alt="Escenario iluminado durante un festival al aire libre">
+              <span class="tag">Próximamente</span>
+              <span class="evento-fecha">21<br>NOV</span>
+            </div>
+            <div class="evento-body">
+              <h2>Festival Café y Montaña</h2>
+              <p class="evento-lugar">Parque de la Guadua · Tuluá</p>
+              <p class="evento-precio">Desde $65.000</p>
+              <p class="event-stock" data-stock-for="festival-cafe"></p>
+              <a class="btn btn-primary" href="checkout.html?evento=festival-cafe">Comprar entradas</a>
+            </div>
+          </article>
+
+          <article class="evento-card" data-event-id="teatro-familiar" data-ciudad="Tuluá" data-categoria="Familiar">
+            <div class="evento-media">
+              <img src="assets/img/cuentos.jpg" alt="Libros y cuentos para una tarde familiar">
+              <span class="tag">Plan familiar</span>
+              <span class="evento-fecha">29<br>NOV</span>
+            </div>
+            <div class="evento-body">
+              <h2>El Bosque de los Sueños</h2>
+              <p class="evento-lugar">Teatro Sarmiento · Tuluá</p>
+              <p class="evento-precio">Desde $22.000</p>
+              <p class="event-stock" data-stock-for="teatro-familiar"></p>
+              <a class="btn btn-primary" href="checkout.html?evento=teatro-familiar">Comprar entradas</a>
+            </div>
+          </article>
+
+          <article class="evento-card" data-event-id="salsa-cali" data-ciudad="Cali" data-categoria="Conciertos">
+            <div class="evento-media">
+              <img src="assets/img/jazz.jpg" alt="Músicos en una noche de ritmos latinos">
+              <span class="tag tag-live">Imperdible</span>
+              <span class="evento-fecha">28<br>NOV</span>
+            </div>
+            <div class="evento-body">
+              <h2>Cali Baila: Noche de Salsa</h2>
+              <p class="evento-lugar">Arena Cañaveralejo · Cali</p>
+              <p class="evento-precio">Desde $55.000</p>
+              <p class="event-stock" data-stock-for="salsa-cali"></p>
+              <a class="btn btn-primary" href="checkout.html?evento=salsa-cali">Comprar entradas</a>
+            </div>
+          </article>
+
+          <article class="evento-card" data-event-id="diseno-cali" data-ciudad="Cali" data-categoria="Festivales">
+            <div class="evento-media">
+              <img src="assets/img/festival-sonoro.jpg" alt="Público disfrutando de una feria creativa">
+              <span class="tag">Entrada general</span>
+              <span class="evento-fecha">06<br>DIC</span>
+            </div>
+            <div class="evento-body">
+              <h2>Mercado Creativo del Valle</h2>
+              <p class="evento-lugar">Bulevar del Río · Cali</p>
+              <p class="evento-precio">Desde $18.000</p>
+              <p class="event-stock" data-stock-for="diseno-cali"></p>
+              <a class="btn btn-primary" href="checkout.html?evento=diseno-cali">Comprar entradas</a>
+            </div>
+          </article>
+
+          <article class="evento-card" data-event-id="rock-bogota" data-ciudad="Bogotá" data-categoria="Conciertos">
+            <div class="evento-media">
+              <img src="assets/img/festival-sonoro.jpg" alt="Multitud frente a un escenario de rock">
+              <span class="tag tag-live">Alta demanda</span>
+              <span class="evento-fecha">05<br>DIC</span>
+            </div>
+            <div class="evento-body">
+              <h2>Bogotá Rock Fest</h2>
+              <p class="evento-lugar">Movistar Arena · Bogotá</p>
+              <p class="evento-precio">Desde $72.000</p>
+              <p class="event-stock" data-stock-for="rock-bogota"></p>
+              <a class="btn btn-primary" href="checkout.html?evento=rock-bogota">Comprar entradas</a>
+            </div>
+          </article>
+
+          <article class="evento-card" data-event-id="planetario-bogota" data-ciudad="Bogotá" data-categoria="Familiar">
+            <div class="evento-media">
+              <img src="assets/img/cuentos.jpg" alt="Experiencia educativa para explorar historias del universo">
+              <span class="tag">Para explorar</span>
+              <span class="evento-fecha">12<br>DIC</span>
+            </div>
+            <div class="evento-body">
+              <h2>Misterios del Universo</h2>
+              <p class="evento-lugar">Planetario de Bogotá · Bogotá</p>
+              <p class="evento-precio">Desde $26.000</p>
+              <p class="event-stock" data-stock-for="planetario-bogota"></p>
+              <a class="btn btn-primary" href="checkout.html?evento=planetario-bogota">Comprar entradas</a>
+            </div>
+          </article>
+
+          <article class="evento-card" data-event-id="electro-medellin" data-ciudad="Medellín" data-categoria="Festivales">
+            <div class="evento-media">
+              <img src="assets/img/festival-sonoro.jpg" alt="Luces de colores en una pista de música electrónica">
+              <span class="tag tag-live">Una noche única</span>
+              <span class="evento-fecha">13<br>DIC</span>
+            </div>
+            <div class="evento-body">
+              <h2>Ritmo Electrónico</h2>
+              <p class="evento-lugar">Parque Norte · Medellín</p>
+              <p class="evento-precio">Desde $68.000</p>
+              <p class="event-stock" data-stock-for="electro-medellin"></p>
+              <a class="btn btn-primary" href="checkout.html?evento=electro-medellin">Comprar entradas</a>
+            </div>
+          </article>
+
+          <article class="evento-card" data-event-id="danza-medellin" data-ciudad="Medellín" data-categoria="Teatro">
+            <div class="evento-media">
+              <img src="assets/img/ultimo-acto.jpg" alt="Artistas en escena durante una presentación de danza">
+              <span class="tag">Nueva función</span>
+              <span class="evento-fecha">19<br>DIC</span>
+            </div>
+            <div class="evento-body">
+              <h2>Cuerpos en Escena</h2>
+              <p class="evento-lugar">Teatro Metropolitano · Medellín</p>
+              <p class="evento-precio">Desde $35.000</p>
+              <p class="event-stock" data-stock-for="danza-medellin"></p>
+              <a class="btn btn-primary" href="checkout.html?evento=danza-medellin">Comprar entradas</a>
+            </div>
+          </article>
+        </div>
+
+        <p class="eventos-vacio" id="eventosVacio" hidden>No hay eventos que coincidan con tu búsqueda. Prueba con otra ciudad o categoría.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a href="index.html" class="logo">Event<span>Hub</span></a>
+        <p class="footer-copy">© 2026 EventHub — Proyecto Integrador. Todos los derechos reservados.</p>
+      </div>
+      <nav class="footer-social" aria-label="Redes sociales">
+        <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="5"></rect>
+            <circle cx="12" cy="12" r="4"></circle>
+            <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"></circle>
+          </svg>
+        </a>
+        <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+            <path d="M14.5 8.5V6.8c0-.8.6-1.3 1.4-1.3H17V3h-2.2C12.2 3 11 4.6 11 6.7v1.8H9V11h2v10h3.5V11h2.4l.4-2.5h-2.8z"></path>
+          </svg>
+        </a>
+        <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+            <path d="M22 12.2s0-3.2-.4-4.6c-.2-.9-.9-1.6-1.8-1.8C18.2 5.4 12 5.4 12 5.4s-6.2 0-7.8.4c-.9.2-1.6.9-1.8 1.8C2 9 2 12.2 2 12.2s0 3.2.4 4.6c.2.9.9 1.6 1.8 1.8 1.6.4 7.8.4 7.8.4s6.2 0 7.8-.4c.9-.2 1.6-.9 1.8-1.8.4-1.4.4-4.6.4-4.6zM10 15.5v-6.6l5.2 3.3L10 15.5z"></path>
+          </svg>
+        </a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
