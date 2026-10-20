@@ -1,52 +1,41 @@
-const EVENTOS = {
-  'festival-sonoro': { nombre: 'Festival Sonoro 2026', precio: 85000, aforo: 30 },
-  'ultimo-acto': { nombre: 'Obra: El Último Acto', precio: 45000, aforo: 24 },
-  comedia: { nombre: 'Noche de Comedia Stand-Up', precio: 30000, aforo: 20 },
-  'copa-regional': { nombre: 'Copa Regional de Fútbol', precio: 20000, aforo: 40 },
-  'jazz-parque': { nombre: 'Jazz en el Parque', precio: 40000, aforo: 25 },
-  'tarde-cuentos': { nombre: 'Tarde de Cuentos', precio: 15000, aforo: 18 },
-  'festival-cafe': { nombre: 'Festival Café y Montaña', precio: 65000, aforo: 26 },
-  'teatro-familiar': { nombre: 'El Bosque de los Sueños', precio: 22000, aforo: 35 },
-  'salsa-cali': { nombre: 'Cali Baila: Noche de Salsa', precio: 55000, aforo: 32 },
-  'diseno-cali': { nombre: 'Mercado Creativo del Valle', precio: 18000, aforo: 50 },
-  'rock-bogota': { nombre: 'Bogotá Rock Fest', precio: 72000, aforo: 60 },
-  'planetario-bogota': { nombre: 'Misterios del Universo', precio: 26000, aforo: 40 },
-  'electro-medellin': { nombre: 'Ritmo Electrónico', precio: 68000, aforo: 42 },
-  'danza-medellin': { nombre: 'Cuerpos en Escena', precio: 35000, aforo: 28 }
-};
-
-const STORAGE = {
-  users: 'eventhub.users',
-  currentUser: 'eventhub.currentUser',
-  inventory: 'eventhub.inventory',
-  reservations: 'eventhub.reservations',
-  accessibility: 'eventhub.accessibility'
-};
+const API_BASE_URL = (window.EVENTHUB_API_URL || '').replace(/\/+$/, '');
+const STORAGE = { accessibility: 'eventhub.accessibility' };
 
 const MAX_ENTRADAS_POR_COMPRA = 10;
 const formatoCOP = (value) => `$${Number(value).toLocaleString('es-CO')}`;
+let cachedUser;
+let userLoaded = false;
 
-function readStore(key, fallback) {
-  const raw = localStorage.getItem(key);
-  return raw === null ? fallback : JSON.parse(raw);
-}
-
-function writeStore(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
-function getInventory() {
-  const inventory = readStore(STORAGE.inventory, {});
-  Object.entries(EVENTOS).forEach(([id, evento]) => {
-    if (!inventory[id]) inventory[id] = { aforo: evento.aforo, vendidos: 0 };
+async function apiRequest(path, options = {}) {
+  const response = await fetch(`${API_BASE_URL}/api${path}`, {
+    credentials: 'include',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers
+    }
   });
-  return inventory;
+  if (response.status === 204) return null;
+  const result = await response.json();
+  if (!response.ok) {
+    const error = new Error(result.error || 'No fue posible completar la solicitud.');
+    error.status = response.status;
+    throw error;
+  }
+  return result;
 }
 
-function currentUser() {
-  const email = localStorage.getItem(STORAGE.currentUser);
-  if (!email) return null;
-  return readStore(STORAGE.users, []).find((user) => user.email === email) || null;
+async function currentUser() {
+  if (userLoaded) return cachedUser;
+  try {
+    const result = await apiRequest('/auth/me');
+    cachedUser = result.user;
+  } catch (error) {
+    if (error.status !== 401) throw error;
+    cachedUser = null;
+  }
+  userLoaded = true;
+  return cachedUser;
 }
 
 function showFeedback(element, message, isError = false) {
@@ -207,15 +196,6 @@ function getAuthFeedback(form) {
   return form.querySelector('.form-feedback');
 }
 
-async function hashPassword(password) {
-  if (!window.crypto || !window.crypto.subtle) {
-    throw new Error('Este navegador no permite proteger la contraseña en esta ubicación. Abre el sitio desde localhost o HTTPS.');
-  }
-  const bytes = new TextEncoder().encode(password);
-  const digest = await window.crypto.subtle.digest('SHA-256', bytes);
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
 function redirectAfterAuth(fallback) {
   const next = new URLSearchParams(window.location.search).get('next');
   if (next && /^[a-z0-9-]+\.html(?:\?[a-zA-Z0-9%=&_-]*)?$/i.test(next)) {
@@ -225,7 +205,7 @@ function redirectAfterAuth(fallback) {
   window.location.href = fallback;
 }
 
-function initializeNavigation() {
+async function initializeNavigation() {
   const navToggle = document.getElementById('navToggle');
   const mainNav = document.getElementById('mainNav');
 
@@ -243,26 +223,37 @@ function initializeNavigation() {
     });
   }
 
-  const user = currentUser();
-  if (!user || !mainNav) return;
-  const loginLink = [...mainNav.querySelectorAll('a')].find((link) => link.textContent.trim() === 'Ingresar');
-  const registerLink = [...mainNav.querySelectorAll('a')].find((link) => link.textContent.trim() === 'Regístrate');
-  if (loginLink) {
-    loginLink.href = 'perfil.html';
-    loginLink.textContent = 'Mi perfil';
-  }
-  if (registerLink) {
-    registerLink.href = '#';
-    registerLink.textContent = 'Cerrar sesión';
-    registerLink.addEventListener('click', (event) => {
-      event.preventDefault();
-      localStorage.removeItem(STORAGE.currentUser);
-      window.location.href = 'index.html';
-    });
+  if (!mainNav) return;
+  try {
+    const user = await currentUser();
+    if (!user) return;
+    const loginLink = [...mainNav.querySelectorAll('a')].find((link) => link.textContent.trim() === 'Ingresar');
+    const registerLink = [...mainNav.querySelectorAll('a')].find((link) => link.textContent.trim() === 'Regístrate');
+    if (loginLink) {
+      loginLink.href = 'perfil.html';
+      loginLink.textContent = 'Mi perfil';
+    }
+    if (registerLink) {
+      registerLink.href = '#';
+      registerLink.textContent = 'Cerrar sesión';
+      registerLink.addEventListener('click', async (event) => {
+        event.preventDefault();
+        try {
+          await apiRequest('/auth/logout', { method: 'POST' });
+          cachedUser = null;
+          userLoaded = true;
+          window.location.href = 'index.html';
+        } catch (error) {
+          showFeedback(document.getElementById('eventosConteo'), error.message, true);
+        }
+      });
+    }
+  } catch (error) {
+    showFeedback(document.getElementById('eventosConteo'), `No se pudo conectar con el servidor: ${error.message}`, true);
   }
 }
 
-function initializeEventSearch() {
+async function initializeEventSearch() {
   const eventosGrid = document.getElementById('eventosGrid');
   const params = new URLSearchParams(window.location.search);
   const consulta = (params.get('q') || '').trim().toLowerCase();
@@ -286,52 +277,69 @@ function initializeEventSearch() {
     chip.classList.toggle('is-active', value.toLowerCase() === categoria);
   });
 
-  let inventory;
+  let events;
+  let user;
   try {
-    inventory = getInventory();
-    writeStore(STORAGE.inventory, inventory);
+    const result = await apiRequest('/events');
+    events = result.events;
+    user = await currentUser();
   } catch (error) {
-    inventory = {};
     const feedback = document.getElementById('eventosConteo');
-    if (feedback) showFeedback(feedback, 'No se pudo cargar el aforo del navegador.', true);
+    if (feedback) showFeedback(feedback, `No se pudieron cargar los eventos: ${error.message}`, true);
+    return;
   }
 
+  const eventsById = new Map(events.map((item) => [item.id, item]));
   const cards = [...document.querySelectorAll('.evento-card[data-event-id]')];
   let visibles = 0;
-  const canPurchase = Boolean(currentUser());
   cards.forEach((card) => {
+    const id = card.dataset.eventId;
+    const event = eventsById.get(id);
+    if (!event) {
+      card.hidden = true;
+      return;
+    }
+    card.dataset.ciudad = event.city;
+    card.dataset.categoria = event.category;
+    const heading = card.querySelector('h2, h3');
+    const venue = card.querySelector('.evento-lugar');
+    const price = card.querySelector('.evento-precio');
+    if (heading) heading.textContent = event.name;
+    if (venue) venue.textContent = `${event.venue} · ${event.city}`;
+    if (price) price.textContent = `Desde ${formatoCOP(event.price)}`;
+
     if (eventosGrid && eventosGrid.contains(card)) {
       const texto = card.textContent.toLowerCase();
       const coincide =
         (!consulta || texto.includes(consulta)) &&
-        (!ciudad || (card.dataset.ciudad || '').toLowerCase() === ciudad) &&
-        (!categoria || (card.dataset.categoria || '').toLowerCase() === categoria);
+        (!ciudad || event.city.toLowerCase() === ciudad) &&
+        (!categoria || event.category.toLowerCase() === categoria);
       card.hidden = !coincide;
       if (coincide) visibles += 1;
     }
 
-    const id = card.dataset.eventId;
-    const stock = id && inventory[id];
     const stockLabel = card.querySelector(`[data-stock-for="${id}"]`);
     const buyButton = card.querySelector('a[href^="checkout.html"]');
-    if (buyButton && !canPurchase) {
+    if (buyButton && !user) {
       buyButton.href = `login.html?next=${encodeURIComponent(`checkout.html?evento=${id}`)}`;
       buyButton.textContent = 'Inicia sesión para comprar';
-      buyButton.setAttribute('aria-label', `Inicia sesión para comprar entradas de ${EVENTOS[id]?.nombre || 'este evento'}`);
+      buyButton.setAttribute('aria-label', `Inicia sesión para comprar entradas de ${event.name}`);
     }
-    if (stock && stockLabel) {
-      const remaining = Math.max(0, stock.aforo - stock.vendidos);
-      stockLabel.textContent = remaining === 0
+    if (stockLabel) {
+      stockLabel.textContent = event.remaining === 0
         ? 'Agotado'
-        : `Quedan ${remaining} ${remaining === 1 ? 'entrada' : 'entradas'}`;
-      stockLabel.classList.toggle('is-sold-out', remaining === 0);
+        : `Quedan ${event.remaining} ${event.remaining === 1 ? 'entrada' : 'entradas'}`;
+      stockLabel.classList.toggle('is-sold-out', event.remaining === 0);
       stockLabel.setAttribute('aria-live', 'polite');
     }
-    if (stock && stock.aforo <= stock.vendidos && buyButton) {
+    if (event.remaining === 0 && buyButton) {
       buyButton.textContent = 'Entradas agotadas';
       buyButton.classList.add('is-disabled');
       buyButton.setAttribute('aria-disabled', 'true');
       buyButton.removeAttribute('href');
+    } else if (buyButton) {
+      buyButton.classList.remove('is-disabled');
+      buyButton.removeAttribute('aria-disabled');
     }
   });
 
@@ -360,21 +368,17 @@ function initializeRegistration() {
     if (!form.reportValidity()) return;
 
     try {
-      const users = readStore(STORAGE.users, []);
-      const email = form.elements.email.value.trim().toLowerCase();
-      if (users.some((user) => user.email === email)) {
-        showFeedback(feedback, 'Ya existe una cuenta registrada con ese correo.', true);
-        return;
-      }
-      const account = {
-        name: form.elements.nombre.value.trim(),
-        email,
-        role: form.elements.tipo.value,
-        passwordHash: await hashPassword(password)
-      };
-      users.push(account);
-      writeStore(STORAGE.users, users);
-      localStorage.setItem(STORAGE.currentUser, account.email);
+      const { user } = await apiRequest('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: form.elements.nombre.value.trim(),
+          email: form.elements.email.value.trim(),
+          password,
+          role: form.elements.tipo.value
+        })
+      });
+      cachedUser = user;
+      userLoaded = true;
       redirectAfterAuth('perfil.html');
     } catch (error) {
       showFeedback(feedback, error.message || 'No se pudo completar el registro.', true);
@@ -396,14 +400,15 @@ function initializeLogin() {
     if (!form.reportValidity()) return;
 
     try {
-      const email = form.elements.email.value.trim().toLowerCase();
-      const passwordHash = await hashPassword(form.elements.password.value);
-      const user = readStore(STORAGE.users, []).find((account) => account.email === email);
-      if (!user || user.passwordHash !== passwordHash) {
-        showFeedback(feedback, 'Correo o contraseña incorrectos.', true);
-        return;
-      }
-      localStorage.setItem(STORAGE.currentUser, user.email);
+      const { user } = await apiRequest('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: form.elements.email.value.trim(),
+          password: form.elements.password.value
+        })
+      });
+      cachedUser = user;
+      userLoaded = true;
       redirectAfterAuth('perfil.html');
     } catch (error) {
       showFeedback(feedback, error.message || 'No se pudo iniciar sesión.', true);
@@ -411,17 +416,23 @@ function initializeLogin() {
   });
 }
 
-function requireUser() {
-  const user = currentUser();
+async function requireUser() {
+  const user = await currentUser();
   if (user) return user;
   const next = `${window.location.pathname.split('/').pop()}${window.location.search}`;
   window.location.href = `login.html?next=${encodeURIComponent(next)}`;
   return null;
 }
 
-function renderProfile() {
+async function renderProfile() {
   if (!document.getElementById('perfilForm')) return;
-  const user = requireUser();
+  let user;
+  try {
+    user = await requireUser();
+  } catch (error) {
+    showFeedback(document.querySelector('#perfilForm .form-feedback'), `No se pudo cargar el perfil: ${error.message}`, true);
+    return;
+  }
   if (!user) return;
 
   const roleNames = { cliente: 'Cliente', agente: 'Agente', administrador: 'Administrador' };
@@ -430,25 +441,26 @@ function renderProfile() {
   document.getElementById('perfilRol').textContent = roleNames[user.role] || user.role;
   document.getElementById('perfilSaludo').textContent = `Hola, ${user.name}`;
   document.getElementById('cerrarSesion').addEventListener('click', () => {
-    localStorage.removeItem(STORAGE.currentUser);
-    window.location.href = 'index.html';
+    apiRequest('/auth/logout', { method: 'POST' })
+      .then(() => { window.location.href = 'index.html'; })
+      .catch((error) => showFeedback(document.querySelector('#perfilForm .form-feedback'), error.message, true));
   });
 
   const form = document.getElementById('perfilForm');
-  form.addEventListener('submit', (event) => {
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const feedback = form.querySelector('.form-feedback');
     if (!form.reportValidity()) return;
     try {
-      const users = readStore(STORAGE.users, []);
-      const email = form.elements.email.value.trim().toLowerCase();
-      if (users.some((account) => account.email === email && account.email !== user.email)) {
-        showFeedback(feedback, 'Ese correo ya está asociado a otra cuenta.', true);
-        return;
-      }
-      const updated = { ...user, name: form.elements.nombre.value.trim(), email };
-      writeStore(STORAGE.users, users.map((account) => account.email === user.email ? updated : account));
-      localStorage.setItem(STORAGE.currentUser, email);
+      const { user: updated } = await apiRequest('/profile', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: form.elements.nombre.value.trim(),
+          email: form.elements.email.value.trim()
+        })
+      });
+      cachedUser = updated;
+      userLoaded = true;
       showFeedback(feedback, 'Perfil actualizado correctamente.');
       document.getElementById('perfilSaludo').textContent = `Hola, ${updated.name}`;
     } catch (error) {
@@ -456,62 +468,72 @@ function renderProfile() {
     }
   });
 
-  const reservations = readStore(STORAGE.reservations, []).filter((item) => item.email === user.email);
   const list = document.getElementById('reservasLista');
-  if (!reservations.length) {
-    list.textContent = 'Todavía no tienes compras. Explora los eventos y encuentra tu próximo plan.';
-  } else {
-    reservations.forEach((reservation) => {
+  try {
+    const { reservations } = await apiRequest('/reservations');
+    if (!reservations.length) {
+      list.textContent = 'Todavía no tienes compras. Explora los eventos y encuentra tu próximo plan.';
+    } else {
+      reservations.forEach((reservation) => {
       const item = document.createElement('li');
-      const eventName = EVENTOS[reservation.eventId]?.nombre || reservation.eventId;
       const details = document.createElement('p');
-      details.textContent = `${eventName} · ${reservation.quantity} entrada(s) · ${formatoCOP(reservation.total)}`;
+      details.textContent = `${reservation.eventName} · ${reservation.quantity} entrada(s) · ${formatoCOP(reservation.total)}`;
       const ticketLink = document.createElement('a');
       ticketLink.className = 'btn btn-ghost reservation-detail';
       ticketLink.href = `ticket.html?compra=${encodeURIComponent(reservation.id)}`;
       ticketLink.textContent = 'Ver detalle y ticket';
       item.append(details, ticketLink);
       list.append(item);
-    });
+      });
+    }
+  } catch (error) {
+    list.textContent = `No se pudieron cargar tus compras: ${error.message}`;
   }
 
   const adminPanel = document.getElementById('adminAforo');
-  if (adminPanel && user.role === 'administrador') renderInventoryManager(adminPanel);
+  if (adminPanel && user.role === 'administrador') await renderInventoryManager(adminPanel);
   if (adminPanel && user.role !== 'administrador') adminPanel.hidden = true;
 }
 
-function renderInventoryManager(panel) {
-  const inventory = getInventory();
+async function renderInventoryManager(panel) {
   const list = panel.querySelector('[data-inventory-list]');
-  Object.entries(EVENTOS).forEach(([id, evento]) => {
+  let events;
+  try {
+    ({ events } = await apiRequest('/events'));
+  } catch (error) {
+    showFeedback(panel.querySelector('.form-feedback'), `No se pudo cargar el aforo: ${error.message}`, true);
+    return;
+  }
+  events.forEach((evento) => {
     const row = document.createElement('div');
     row.className = 'inventory-row';
     const label = document.createElement('label');
-    label.textContent = `${evento.nombre} (vendidas: ${inventory[id].vendidos})`;
+    label.textContent = `${evento.name} (vendidas: ${evento.sold})`;
     const input = document.createElement('input');
     input.type = 'number';
-    input.min = String(inventory[id].vendidos);
-    input.value = String(inventory[id].aforo);
+    input.min = String(evento.sold);
+    input.value = String(evento.capacity);
     input.required = true;
-    input.setAttribute('aria-label', `Aforo máximo: ${evento.nombre}`);
+    input.setAttribute('aria-label', `Aforo máximo: ${evento.name}`);
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'btn btn-ghost';
     button.textContent = 'Guardar aforo';
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
       const feedback = panel.querySelector('.form-feedback');
       const capacity = Number(input.value);
-      if (!Number.isInteger(capacity) || capacity < inventory[id].vendidos) {
+      if (!Number.isInteger(capacity) || capacity < evento.sold) {
         showFeedback(feedback, 'El aforo debe ser un número entero igual o mayor a las entradas vendidas.', true);
         return;
       }
       try {
-        const current = getInventory();
-        current[id].aforo = capacity;
-        writeStore(STORAGE.inventory, current);
-        inventory[id].aforo = capacity;
-        input.min = String(inventory[id].vendidos);
-        showFeedback(feedback, `Aforo actualizado para ${evento.nombre}.`);
+        await apiRequest(`/events/${encodeURIComponent(evento.id)}/capacity`, {
+          method: 'PATCH',
+          body: JSON.stringify({ capacity })
+        });
+        evento.capacity = capacity;
+        input.min = String(evento.sold);
+        showFeedback(feedback, `Aforo actualizado para ${evento.name}.`);
       } catch (error) {
         showFeedback(feedback, error.message || 'No se pudo guardar el aforo.', true);
       }
@@ -521,82 +543,84 @@ function renderInventoryManager(panel) {
   });
 }
 
-function initializeCheckout() {
+async function initializeCheckout() {
   const form = document.getElementById('checkoutForm');
   if (!form) return;
 
   const eventId = new URLSearchParams(window.location.search).get('evento');
-  const evento = EVENTOS[eventId];
   const feedback = form.querySelector('.form-feedback');
+  let user;
+  let evento;
+  try {
+    user = await requireUser();
+    if (!user) return;
+    const { events } = await apiRequest('/events');
+    evento = events.find((item) => item.id === eventId);
+  } catch (error) {
+    showFeedback(feedback, `No se pudo cargar la compra: ${error.message}`, true);
+    return;
+  }
   if (!evento) {
     showFeedback(feedback, 'No encontramos ese evento. Vuelve a la cartelera para elegir uno.', true);
     form.hidden = true;
     return;
   }
-  const user = requireUser();
-  if (!user) return;
 
-  document.getElementById('compraEvento').textContent = evento.nombre;
-  document.getElementById('compraPrecio').textContent = `${formatoCOP(evento.precio)} por entrada`;
+  document.getElementById('compraEvento').textContent = evento.name;
+  document.getElementById('compraPrecio').textContent = `${formatoCOP(evento.price)} por entrada`;
   const quantity = form.elements.quantity;
   const total = document.getElementById('compraTotal');
 
   const refreshQuantity = () => {
-    const inventory = getInventory();
-    const remaining = Math.max(0, inventory[eventId].aforo - inventory[eventId].vendidos);
+    const remaining = evento.remaining;
     const maxAllowed = Math.min(remaining, MAX_ENTRADAS_POR_COMPRA);
     quantity.max = String(maxAllowed);
     quantity.disabled = remaining === 0;
     quantity.setCustomValidity(Number(quantity.value) > maxAllowed
       ? `Puedes comprar hasta ${maxAllowed} entradas en esta compra.`
       : '');
-    total.textContent = formatoCOP(evento.precio * Number(quantity.value || 0));
+    total.textContent = formatoCOP(evento.price * Number(quantity.value || 0));
     const stock = document.getElementById('checkoutStock');
     stock.textContent = remaining === 0
       ? 'Evento agotado: ya no quedan entradas.'
       : `Quedan ${remaining} ${remaining === 1 ? 'entrada' : 'entradas'}. Puedes comprar hasta ${maxAllowed} por compra.`;
     form.querySelector('[type="submit"]').disabled = remaining === 0;
   };
-  quantity.addEventListener('input', () => {
-    refreshQuantity();
-  });
+  quantity.addEventListener('input', refreshQuantity);
   quantity.addEventListener('change', refreshQuantity);
   refreshQuantity();
 
-  form.addEventListener('submit', (event) => {
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!form.reportValidity()) return;
     try {
-      const currentInventory = getInventory();
-      const remaining = currentInventory[eventId].aforo - currentInventory[eventId].vendidos;
       const count = Number(quantity.value);
-      if (!Number.isInteger(count) || count < 1 || count > MAX_ENTRADAS_POR_COMPRA || count > remaining) {
-        showFeedback(feedback, count > MAX_ENTRADAS_POR_COMPRA
-          ? `El máximo permitido es ${MAX_ENTRADAS_POR_COMPRA} entradas por compra.`
-          : 'La cantidad supera el aforo disponible. Actualiza la página y vuelve a intentarlo.', true);
+      if (!Number.isInteger(count) || count < 1 || count > MAX_ENTRADAS_POR_COMPRA) {
+        showFeedback(feedback, `Elige entre 1 y ${MAX_ENTRADAS_POR_COMPRA} entradas.`, true);
         refreshQuantity();
         return;
       }
-      const reservations = readStore(STORAGE.reservations, []);
-      const reservation = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        email: user.email,
-        eventId,
-        quantity: count,
-        total: evento.precio * count,
-        date: new Date().toISOString()
-      };
-      currentInventory[eventId].vendidos += count;
-      reservations.push(reservation);
-      writeStore(STORAGE.inventory, currentInventory);
-      writeStore(STORAGE.reservations, reservations);
+      const { reservation } = await apiRequest('/reservations', {
+        method: 'POST',
+        body: JSON.stringify({ eventId, quantity: count })
+      });
       form.hidden = true;
       document.getElementById('compraConfirmacion').hidden = false;
       document.getElementById('confirmacionTexto').textContent =
-        `Tu compra de ${count} ${count === 1 ? 'entrada' : 'entradas'} para ${evento.nombre} quedó confirmada. Total: ${formatoCOP(reservation.total)}.`;
+        `Tu reserva de demostración de ${count} ${count === 1 ? 'entrada' : 'entradas'} para ${evento.name} quedó registrada. Total: ${formatoCOP(reservation.total)}. No se realizó ningún cobro.`;
       const ticketLink = document.getElementById('ticketCompraLink');
       ticketLink.href = `ticket.html?compra=${encodeURIComponent(reservation.id)}`;
     } catch (error) {
+      if (error.status === 409) {
+        try {
+          const { events } = await apiRequest('/events');
+          evento = events.find((item) => item.id === eventId) || evento;
+          refreshQuantity();
+        } catch (refreshError) {
+          showFeedback(feedback, `No se pudo actualizar el aforo: ${refreshError.message}`, true);
+          return;
+        }
+      }
       showFeedback(feedback, error.message || 'No se pudo completar la compra.', true);
     }
   });
@@ -611,22 +635,26 @@ function escapeXml(value) {
     .replaceAll("'", '&apos;');
 }
 
-function initializeTicket() {
+async function initializeTicket() {
   const page = document.getElementById('ticketPage');
   if (!page) return;
 
-  const user = requireUser();
-  if (!user) return;
+  let user;
+  let reservation;
   const purchaseId = new URLSearchParams(window.location.search).get('compra');
-  const reservation = readStore(STORAGE.reservations, [])
-    .find((item) => item.id === purchaseId && item.email === user.email);
-  if (!reservation) {
+  const errorFeedback = document.getElementById('ticketError');
+  try {
+    user = await requireUser();
+    if (!user) return;
+    if (!purchaseId) throw new Error('No encontramos esta compra en tu cuenta.');
+    ({ reservation } = await apiRequest(`/reservations/${encodeURIComponent(purchaseId)}`));
+  } catch (error) {
     page.hidden = true;
-    showFeedback(document.getElementById('ticketError'), 'No encontramos esta compra en tu cuenta.');
+    showFeedback(errorFeedback, error.message || 'No se pudo cargar el ticket.', true);
     return;
   }
 
-  const eventName = EVENTOS[reservation.eventId]?.nombre || 'Evento EventHub';
+  const eventName = reservation.eventName || 'Evento EventHub';
   const date = new Date(reservation.date);
   const dateLabel = Number.isNaN(date.getTime())
     ? 'Fecha no disponible'
@@ -657,7 +685,7 @@ function initializeTicket() {
       <text x="785" y="235" fill="#3e3850" font-family="Arial,sans-serif" font-size="20">TOTAL</text>
       <text x="785" y="285" fill="#0c5f57" font-family="Arial,sans-serif" font-size="30" font-weight="700">${escapeXml(formatoCOP(reservation.total))}</text>
       <text x="785" y="365" fill="#3e3850" font-family="Arial,sans-serif" font-size="18">ESTADO</text>
-      <text x="785" y="402" fill="#0c5f57" font-family="Arial,sans-serif" font-size="20" font-weight="700">CONFIRMADA</text>
+      <text x="785" y="402" fill="#0c5f57" font-family="Arial,sans-serif" font-size="20" font-weight="700">RESERVA DEMO</text>
     </svg>`;
     const file = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
     const downloadUrl = URL.createObjectURL(file);

@@ -1,0 +1,1 @@
+window.EVENTHUB_API_URL = '';

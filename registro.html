@@ -52,18 +52,17 @@
             <select id="registroTipo" name="tipo" required>
               <option value="cliente">Cliente</option>
               <option value="agente">Agente</option>
-              <option value="administrador">Administrador (demo)</option>
             </select>
           </div>
 
           <div class="field">
             <label for="registroPass">Contraseña</label>
-            <input type="password" id="registroPass" name="password" autocomplete="new-password" required minlength="6" placeholder="Mínimo 6 caracteres">
+            <input type="password" id="registroPass" name="password" autocomplete="new-password" required minlength="8" maxlength="72" placeholder="Mínimo 8 caracteres">
           </div>
 
           <div class="field">
             <label for="registroPass2">Confirmar contraseña</label>
-            <input type="password" id="registroPass2" name="password2" autocomplete="new-password" required minlength="6" data-match="#registroPass" placeholder="Repite la contraseña">
+            <input type="password" id="registroPass2" name="password2" autocomplete="new-password" required minlength="8" maxlength="72" data-match="#registroPass" placeholder="Repite la contraseña">
           </div>
 
           <button type="submit" class="btn btn-primary">Crear cuenta</button>
@@ -102,6 +101,7 @@
     </div>
   </footer>
 
+  <script src="js/config.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

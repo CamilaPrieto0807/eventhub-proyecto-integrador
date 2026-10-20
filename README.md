@@ -1,57 +1,100 @@
 # EventHub — Proyecto Integrador
 
-Sistema web para la gestión de eventos y espectáculos (registro de usuarios,
-administración de clientes/agentes/eventos y reservas), desarrollado como
-Proyecto Integrador de Bases de Datos y Programación en Ambiente Web I.
+Aplicación para explorar eventos, crear cuentas y registrar reservas. El frontend
+está hecho con HTML, CSS y JavaScript sin framework; el backend usa Node.js,
+Express y PostgreSQL en Neon.
 
-## Estructura del proyecto
+## Estructura
 
+- Páginas HTML y estilos: raíz del proyecto y `css/`.
+- Integración del navegador con la API: `js/main.js` y `js/config.js`.
+- API, sesiones y comando de administración: `backend/src/`.
+- Esquema y carga inicial de los 14 eventos: `backend/sql/schema.sql`.
+
+## Preparar PostgreSQL en Neon
+
+1. Crea un proyecto y una base de datos en Neon.
+2. En Neon, abre **SQL Editor**, pega el contenido de `backend/sql/schema.sql` y ejecútalo. El script crea las tablas e inserta los 14 eventos iniciales; puede ejecutarse de nuevo sin duplicarlos.
+3. Copia la cadena de conexión PostgreSQL de Neon con **Pooled connection** activado para usarla como `DATABASE_URL`. Mantén `sslmode=require` y no publiques esta cadena.
+
+El backend también ejecuta el esquema al iniciar para asegurar que las tablas y
+los eventos existan.
+
+## Ejecutar el backend localmente
+
+Requiere Node.js 20 o superior.
+
+```powershell
+cd backend
+npm install
+Copy-Item .env.example .env
 ```
-eventhub-proyecto-integrador/
-├── index.html          # Home Page principal (mobile-first)
-├── eventos.html        # Cartelera de eventos y compra de entradas
-├── categorias.html     # Eventos por categoría
-├── como-funciona.html  # Explicación del flujo de la plataforma
-├── registro.html       # Registro de usuarios
-├── login.html          # Inicio de sesión
-├── perfil.html         # Perfil (cliente, agente, administrador) y compras
-├── checkout.html       # Checkout con pago simulado
-├── ticket.html         # Detalle del ticket (SVG / imprimible)
-├── css/
-│   └── style.css       # Estilos (HTML5 + CSS3)
-├── js/
-│   └── main.js         # Lógica del front (sesión, compras, accesibilidad)
-└── assets/
-    └── img/            # Recursos gráficos
+
+Edita el archivo `backend/.env` y establece `DATABASE_URL` y un `SESSION_SECRET`
+aleatorio de al menos 32 caracteres. Después:
+
+```powershell
+npm run dev
 ```
 
-## Tecnologías
+La API escucha en `http://127.0.0.1:3000`; su comprobación de salud es
+`http://127.0.0.1:3000/api/health`.
 
-- HTML5
-- CSS3 (mobile-first, responsive)
-- JavaScript (vanilla)
+Sirve el frontend mediante un servidor estático local en el puerto 5500 (por
+ejemplo, Live Server en `http://127.0.0.1:5500`) y define
+`window.EVENTHUB_API_URL = 'http://127.0.0.1:3000'` en `js/config.js`. Usa el
+mismo hostname (`127.0.0.1` o `localhost`) para el frontend y la API, así la
+cookie de sesión funciona localmente.
 
-## autora
+## Despliegue en Render y Netlify
 
-- Camila prieto barbosa
--
+Neon solo aloja PostgreSQL; Render aloja la API y Netlify los archivos estáticos.
 
-## Funciones de demostración
+1. En Render, crea un **Web Service** desde el repositorio. Configura el
+   directorio raíz como `backend`, el comando de
+   instalación como `npm install` y el comando de inicio como `npm start`.
+2. En Render, configura estas variables privadas:
+   - `NODE_ENV=production`
+   - `DATABASE_URL`: cadena de conexión de Neon.
+   - `SESSION_SECRET`: valor aleatorio de al menos 32 caracteres.
+   - `FRONTEND_URLS`: origen HTTPS de Netlify, sin barra al final.
+   - `COOKIE_SAME_SITE=lax` si vas a usar el proxy del siguiente paso.
+3. En Netlify, despliega la carpeta raíz del sitio (la carpeta que contiene
+   `index.html`). Antes de desplegar, reemplaza las dos apariciones de
+   `YOUR_RENDER_SERVICE.onrender.com` en `netlify.toml` por el dominio asignado a
+   tu servicio de Render. Deja `window.EVENTHUB_API_URL = ''` en `js/config.js`;
+   el proxy hace que el navegador use `/api` en el mismo dominio de Netlify.
+4. Prueba `https://tu-api.onrender.com/api/health`, luego crea una cuenta y
+   comprueba el perfil, los eventos y una reserva de demostración.
 
-Registro e inicio de sesión en el navegador, con validación y detección de correos duplicados.
-Perfiles de cliente, agente y administrador; el administrador puede ajustar aforos.
-Cartelera pública para explorar; la compra requiere iniciar sesión y vuelve al evento seleccionado después de autenticarse.
-Compra de entradas desde las tarjetas de eventos, con inventario de demostración en el navegador, máximo de 10 entradas por compra y bloqueo al agotarse.
-14 eventos de demostración en Tuluá, Cali, Bogotá y Medellín.
-Decoración visual animada en portada y encabezados, con movimiento desactivado al respetar las preferencias de movimiento reducido.
-Checkout y confirmación de pagos simulados; las compras actualizan las entradas disponibles y aparecen en el perfil.
-Desde el perfil, cada compra tiene un detalle de ticket de demostración descargable como SVG o imprimible/guardable como PDF.
-Panel de accesibilidad disponible en todas las páginas: tamaño del texto, negrita, modo oscuro, alto contraste, subrayado de enlaces y movimiento reducido. Las preferencias se recuerdan en el navegador.
+`FRONTEND_URLS` acepta varios orígenes separados por comas. Debe coincidir
+exactamente con el dominio de Netlify, incluidos los dominios de vista previa
+que vayas a usar. El proxy evita depender de cookies de terceros entre los
+dominios de Netlify y Render. Si prefieres conectar el navegador directamente a
+Render, pon la URL HTTPS de la API en `js/config.js` y usa
+`COOKIE_SAME_SITE=none`; algunos navegadores pueden bloquear cookies entre
+sitios, por lo que se recomienda el proxy.
 
-Los datos usan localStorage, por lo que solo existen en el navegador/dispositivo actual y no se sincronizan entre usuarios. La selección de roles no es una autorización segura. Los pagos son simulados: integrar Stripe real requiere un backend, creación y verificación de sesiones de pago del lado del servidor y claves protegidas; nunca se deben exponer claves secretas ni almacenar datos de tarjeta en el navegador.
+Para dar acceso administrativo, primero registra una cuenta y ejecuta desde
+`backend/`:
 
-Para probar en local, sirve esta carpeta con un servidor estático local y navega a index.html. El flujo no representa autenticación ni pagos aptos para producción.
+```powershell
+npm run admin:promote -- correo@ejemplo.com
+```
 
-Estado del proyecto
+Ese comando usa `DATABASE_URL` y eleva solo la cuenta indicada. El registro
+público no permite crear administradores.
 
-Prototipo funcional de interfaz para pruebas locales; pendiente de backend, persistencia compartida y pasarela de pago real.
+## Alcance de seguridad y pagos
+
+Las contraseñas se guardan con hash bcrypt en el backend; las sesiones usan una
+cookie `HttpOnly` persistida en PostgreSQL. Las compras y el aforo se validan en
+el servidor y las reservas pertenecen a la cuenta que las creó. Los roles de
+administrador no se pueden asignar desde el formulario público.
+
+El checkout sigue siendo de demostración: no solicita ni almacena tarjetas y no
+realiza cobros. Antes de aceptar pagos reales se debe integrar una pasarela con
+verificación del lado del servidor. Las preferencias de accesibilidad se
+conservan en el navegador; los datos de cuenta, eventos, aforo y reservas se
+guardan en PostgreSQL. Las cuentas antiguas que existieran solo en `localStorage`
+no se migran automáticamente; los usuarios deben registrarse de nuevo.
