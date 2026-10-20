@@ -11,6 +11,13 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_unique
   ON users (lower(email));
 
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS assigned_agent_id uuid REFERENCES users(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS users_assigned_agent_idx
+  ON users (assigned_agent_id)
+  WHERE assigned_agent_id IS NOT NULL;
+
 CREATE TABLE IF NOT EXISTS events (
   id text PRIMARY KEY,
   name text NOT NULL,

@@ -121,6 +121,14 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+function requireAgent(req, res, next) {
+  if (req.session.user?.role !== 'agente') {
+    res.status(403).json({ error: 'Se requiere una cuenta de agente.' });
+    return;
+  }
+  next();
+}
+
 function serializeUser(user) {
   return { id: user.id, name: user.name, email: user.email, role: user.role };
 }
@@ -281,6 +289,88 @@ api.patch('/profile', validateOrigin, requireUser, async (req, res) => {
   if (!result.rows[0]) throw apiError(404, 'No se encontró la cuenta.');
   req.session.user = serializeUser(result.rows[0]);
   res.json({ user: req.session.user });
+});
+
+api.get('/agent/clients', requireUser, requireAgent, async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT id, name, email, created_at
+     FROM users
+     WHERE role = 'cliente' AND assigned_agent_id = $1
+     ORDER BY lower(name), lower(email)`,
+    [req.session.user.id]
+  );
+  res.json({
+    clients: rows.map((client) => ({
+      id: client.id,
+      name: client.name,
+      email: client.email,
+      createdAt: client.created_at
+    }))
+  });
+});
+
+api.get('/admin/users', requireUser, requireAdmin, async (req, res) => {
+  const [agents, clients] = await Promise.all([
+    pool.query(
+      `SELECT agent.id, agent.name, agent.email, count(client.id)::integer AS client_count
+       FROM users agent
+       LEFT JOIN users client
+         ON client.assigned_agent_id = agent.id AND client.role = 'cliente'
+       WHERE agent.role = 'agente'
+       GROUP BY agent.id
+       ORDER BY lower(agent.name), lower(agent.email)`
+    ),
+    pool.query(
+      `SELECT client.id, client.name, client.email, client.assigned_agent_id
+       FROM users client
+       WHERE client.role = 'cliente'
+       ORDER BY lower(client.name), lower(client.email)`
+    )
+  ]);
+  res.json({
+    agents: agents.rows.map((agent) => ({
+      id: agent.id,
+      name: agent.name,
+      email: agent.email,
+      clientCount: agent.client_count
+    })),
+    clients: clients.rows.map((client) => ({
+      id: client.id,
+      name: client.name,
+      email: client.email,
+      agentId: client.assigned_agent_id
+    }))
+  });
+});
+
+api.patch('/admin/clients/:id/agent', validateOrigin, requireUser, requireAdmin, async (req, res) => {
+  const clientId = req.params.id;
+  const agentId = req.body.agentId;
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+  if (!uuidPattern.test(clientId)) {
+    throw apiError(400, 'El identificador del cliente no es válido.');
+  }
+  if (agentId !== null && (typeof agentId !== 'string' || !uuidPattern.test(agentId))) {
+    throw apiError(400, 'Selecciona un agente válido o deja el cliente sin asignar.');
+  }
+
+  if (agentId) {
+    const agent = await pool.query(
+      "SELECT 1 FROM users WHERE id = $1 AND role = 'agente'",
+      [agentId]
+    );
+    if (!agent.rowCount) throw apiError(404, 'No encontramos ese agente.');
+  }
+
+  const { rows } = await pool.query(
+    `UPDATE users SET assigned_agent_id = $1
+     WHERE id = $2 AND role = 'cliente'
+     RETURNING id, assigned_agent_id`,
+    [agentId, clientId]
+  );
+  if (!rows[0]) throw apiError(404, 'No encontramos ese cliente.');
+  res.json({ clientId: rows[0].id, agentId: rows[0].assigned_agent_id });
 });
 
 api.get('/reservations', requireUser, async (req, res) => {
