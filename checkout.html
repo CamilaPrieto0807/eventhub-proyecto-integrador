@@ -37,15 +37,73 @@
             <label for="cantidadEntradas">Cantidad (máximo 10 por compra)</label>
             <input type="number" id="cantidadEntradas" name="quantity" min="1" max="10" value="1" required>
           </div>
-          <p class="page-lead">Esta es una reserva de demostración. No se solicita información de tarjeta ni se realiza ningún cobro.</p>
+          <p class="demo-notice" role="note">Entorno de prueba: no se procesan pagos ni se guardan los datos ingresados.</p>
+          <fieldset class="payment-methods">
+            <legend>Medio de pago</legend>
+            <label class="payment-method">
+              <input type="radio" name="paymentMethod" value="card" checked>
+              <span>Tarjeta débito o crédito</span>
+            </label>
+            <label class="payment-method">
+              <input type="radio" name="paymentMethod" value="pse">
+              <span>PSE</span>
+            </label>
+          </fieldset>
+          <fieldset class="payment-fields" id="cardFields">
+            <legend>Datos de tarjeta</legend>
+            <div class="field">
+              <label for="cardName">Nombre del titular</label>
+              <input id="cardName" name="cardName" type="text" maxlength="100" autocomplete="off" placeholder="Nombre de prueba">
+            </div>
+            <div class="field">
+              <label for="cardNumber">Número de tarjeta</label>
+              <input id="cardNumber" name="cardNumber" type="text" inputmode="numeric" maxlength="19" autocomplete="off" placeholder="4242 4242 4242 4242">
+            </div>
+            <div class="checkout-fields">
+              <div class="field">
+                <label for="cardExpiry">Vencimiento</label>
+                <input id="cardExpiry" name="cardExpiry" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="MM/AA" pattern="(0[1-9]|1[0-2])/[0-9]{2}" title="Usa el formato MM/AA, por ejemplo 08/30.">
+              </div>
+              <div class="field">
+                <label for="cardCvc">Código de seguridad</label>
+                <input id="cardCvc" name="cardCvc" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="123" pattern="[0-9]{3,4}" title="Ingresa 3 o 4 dígitos ficticios.">
+              </div>
+            </div>
+          </fieldset>
+          <fieldset class="payment-fields" id="pseFields" hidden disabled>
+            <legend>Datos para PSE</legend>
+            <div class="field">
+              <label for="pseBank">Banco</label>
+              <select id="pseBank" name="pseBank">
+                <option value="">Selecciona un banco</option>
+                <option value="banco-demo">Banco de prueba</option>
+                <option value="otro-demo">Otra entidad de prueba</option>
+              </select>
+            </div>
+            <div class="checkout-fields">
+              <div class="field">
+                <label for="pseDocumentType">Tipo de documento</label>
+                <select id="pseDocumentType" name="pseDocumentType">
+                  <option value="">Selecciona</option>
+                  <option value="cc">Cédula</option>
+                  <option value="ce">Cédula de extranjería</option>
+                  <option value="nit">NIT</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="pseDocument">Número de documento</label>
+                <input id="pseDocument" name="pseDocument" type="text" inputmode="numeric" maxlength="15" autocomplete="off" placeholder="Documento ficticio" pattern="[0-9]{5,15}" title="Ingresa entre 5 y 15 dígitos ficticios.">
+              </div>
+            </div>
+          </fieldset>
           <p class="checkout-total">Total: <strong id="compraTotal"></strong></p>
-          <button type="submit" class="btn btn-primary">Confirmar reserva (demo)</button>
+          <button type="submit" class="btn btn-primary">Confirmar compra</button>
           <p class="form-feedback" role="status" hidden></p>
           <p class="auth-switch"><a href="eventos.html">Volver a eventos</a></p>
         </form>
         <section class="auth-card" id="compraConfirmacion" hidden>
           <p class="eyebrow">Listo</p>
-          <h1>Reserva registrada</h1>
+          <h1>Compra confirmada</h1>
           <p id="confirmacionTexto" class="page-lead"></p>
           <a class="btn btn-primary" id="ticketCompraLink" href="#">Ver y descargar mi ticket</a>
           <a class="btn btn-primary" href="perfil.html">Ver mis entradas</a>

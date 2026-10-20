@@ -109,9 +109,12 @@ cookie `HttpOnly` persistida en PostgreSQL. Las compras y el aforo se validan en
 el servidor y las reservas pertenecen a la cuenta que las creó. Los roles de
 administrador no se pueden asignar desde el formulario público.
 
-El checkout sigue siendo de demostración: no solicita ni almacena tarjetas y no
-realiza cobros. Antes de aceptar pagos reales se debe integrar una pasarela con
-verificación del lado del servidor. Las preferencias de accesibilidad se
-conservan en el navegador; los datos de cuenta, eventos, aforo y reservas se
-guardan en PostgreSQL. Las cuentas antiguas que existieran solo en `localStorage`
-no se migran automáticamente; los usuarios deben registrarse de nuevo.
+El checkout simula una compra con tarjeta o PSE y genera un ticket de
+demostración. Solo se guarda el medio de pago elegido; los datos ficticios que se
+escriben en el formulario no se envían al backend ni se almacenan, y no se
+realizan cobros. No ingreses datos de pago reales. Antes de aceptar pagos reales
+se debe integrar una pasarela con verificación del lado del servidor. Las
+preferencias de accesibilidad se conservan en el navegador; los datos de cuenta,
+eventos, aforo y compras simuladas se guardan en PostgreSQL. Las cuentas antiguas
+que existieran solo en `localStorage` no se migran automáticamente; los usuarios
+deben registrarse de nuevo.

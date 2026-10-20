@@ -724,6 +724,37 @@ h1, h2, h3 {
 .checkout-card h2 { margin: 12px 0 6px; }
 .checkout-card .demo-notice { margin: 16px 0; }
 .checkout-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.payment-methods,
+.payment-fields {
+  min-width: 0;
+  margin: 18px 0;
+  padding: 0;
+  border: 0;
+}
+.payment-methods legend,
+.payment-fields legend { margin-bottom: 10px; font-weight: 600; }
+.payment-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.payment-method {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.payment-method input { width: auto; margin: 0; accent-color: var(--accent-2); }
+.payment-fields .field { margin-bottom: 12px; }
+.payment-fields select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.payment-fields[hidden] { display: none; }
 .checkout-total { margin: 12px 0; font-size: 1.1rem; }
 .ticket-container { max-width: 880px; }
 .ticket-card {

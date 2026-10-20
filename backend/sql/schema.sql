@@ -38,10 +38,16 @@ CREATE TABLE IF NOT EXISTS reservations (
   quantity integer NOT NULL CHECK (quantity BETWEEN 1 AND 10),
   unit_price integer NOT NULL CHECK (unit_price >= 0),
   total integer NOT NULL CHECK (total = quantity * unit_price),
+  payment_method text NOT NULL DEFAULT 'demo'
+    CHECK (payment_method IN ('card', 'pse', 'demo')),
   status text NOT NULL DEFAULT 'demo_confirmed'
     CHECK (status = 'demo_confirmed'),
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE reservations
+  ADD COLUMN IF NOT EXISTS payment_method text NOT NULL DEFAULT 'demo'
+  CHECK (payment_method IN ('card', 'pse', 'demo'));
 
 CREATE INDEX IF NOT EXISTS reservations_user_created_idx
   ON reservations (user_id, created_at DESC);

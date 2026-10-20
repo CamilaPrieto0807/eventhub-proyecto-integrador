@@ -47,6 +47,15 @@
             <input type="password" id="loginPass" name="password" autocomplete="current-password" required minlength="8" maxlength="72" placeholder="Mínimo 8 caracteres">
           </div>
 
+          <div class="field">
+            <label for="loginRole">Ingresar como</label>
+            <select id="loginRole" name="role" required>
+              <option value="cliente">Cliente</option>
+              <option value="agente">Agente</option>
+              <option value="administrador">Administrador</option>
+            </select>
+          </div>
+
           <button type="submit" class="btn btn-primary">Ingresar</button>
           <p class="form-feedback" role="status" hidden></p>
           <p class="auth-switch">¿No tienes cuenta? <a href="registro.html">Regístrate</a></p>

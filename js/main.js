@@ -404,7 +404,8 @@ function initializeLogin() {
         method: 'POST',
         body: JSON.stringify({
           email: form.elements.email.value.trim(),
-          password: form.elements.password.value
+          password: form.elements.password.value,
+          role: form.elements.role.value
         })
       });
       cachedUser = user;
@@ -736,6 +737,39 @@ async function initializeCheckout() {
   document.getElementById('compraPrecio').textContent = `${formatoCOP(evento.price)} por entrada`;
   const quantity = form.elements.quantity;
   const total = document.getElementById('compraTotal');
+  const cardFields = document.getElementById('cardFields');
+  const pseFields = document.getElementById('pseFields');
+  const cardInputs = [...cardFields.querySelectorAll('input')];
+  const pseInputs = [...pseFields.querySelectorAll('input, select')];
+  const paymentRadios = [...form.querySelectorAll('input[name="paymentMethod"]')];
+  const clearPaymentInputs = (inputs) => {
+    inputs.forEach((input) => {
+      input.value = '';
+      input.setCustomValidity('');
+    });
+  };
+  const setPaymentMethod = () => {
+    const method = paymentRadios.find((radio) => radio.checked)?.value;
+    clearPaymentInputs(method === 'card' ? pseInputs : cardInputs);
+    cardFields.disabled = method !== 'card';
+    pseFields.disabled = method !== 'pse';
+    cardInputs.forEach((input) => { input.required = method === 'card'; });
+    pseInputs.forEach((input) => { input.required = method === 'pse'; });
+    cardFields.hidden = method !== 'card';
+    pseFields.hidden = method !== 'pse';
+  };
+  paymentRadios.forEach((radio) => radio.addEventListener('change', setPaymentMethod));
+  setPaymentMethod();
+
+  const cardNumber = document.getElementById('cardNumber');
+  cardNumber.addEventListener('input', () => {
+    const digits = cardNumber.value.replace(/\D/g, '');
+    cardNumber.setCustomValidity(
+      digits.length >= 13 && digits.length <= 19
+        ? ''
+        : 'Ingresa entre 13 y 19 dígitos ficticios.'
+    );
+  });
 
   const refreshQuantity = () => {
     const remaining = evento.remaining;
@@ -766,14 +800,16 @@ async function initializeCheckout() {
         refreshQuantity();
         return;
       }
+      const paymentMethod = paymentRadios.find((radio) => radio.checked)?.value;
       const { reservation } = await apiRequest('/reservations', {
         method: 'POST',
-        body: JSON.stringify({ eventId, quantity: count })
+        body: JSON.stringify({ eventId, quantity: count, paymentMethod })
       });
+      clearPaymentInputs([...cardInputs, ...pseInputs]);
       form.hidden = true;
       document.getElementById('compraConfirmacion').hidden = false;
       document.getElementById('confirmacionTexto').textContent =
-        `Tu reserva de demostración de ${count} ${count === 1 ? 'entrada' : 'entradas'} para ${evento.name} quedó registrada. Total: ${formatoCOP(reservation.total)}. No se realizó ningún cobro.`;
+        `Tu compra de ${count} ${count === 1 ? 'entrada' : 'entradas'} para ${evento.name} fue aprobada con ${reservation.paymentMethod === 'pse' ? 'PSE' : 'tarjeta'}. Total: ${formatoCOP(reservation.total)}.`;
       const ticketLink = document.getElementById('ticketCompraLink');
       ticketLink.href = `ticket.html?compra=${encodeURIComponent(reservation.id)}`;
     } catch (error) {
@@ -834,6 +870,12 @@ async function initializeTicket() {
   document.getElementById('ticketTotal').textContent = formatoCOP(reservation.total);
   document.getElementById('ticketFecha').textContent = dateLabel;
   document.getElementById('ticketReferencia').textContent = `EH-${shortId}`;
+  const paymentMethodLabel = reservation.paymentMethod === 'pse'
+    ? 'PSE'
+    : reservation.paymentMethod === 'card'
+      ? 'Tarjeta'
+      : 'Pago';
+  document.getElementById('ticketMetodoPago').textContent = paymentMethodLabel;
 
   document.getElementById('descargarTicket').addEventListener('click', () => {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560">
@@ -851,7 +893,7 @@ async function initializeTicket() {
       <text x="785" y="235" fill="#3e3850" font-family="Arial,sans-serif" font-size="20">TOTAL</text>
       <text x="785" y="285" fill="#0c5f57" font-family="Arial,sans-serif" font-size="30" font-weight="700">${escapeXml(formatoCOP(reservation.total))}</text>
       <text x="785" y="365" fill="#3e3850" font-family="Arial,sans-serif" font-size="18">ESTADO</text>
-      <text x="785" y="402" fill="#0c5f57" font-family="Arial,sans-serif" font-size="20" font-weight="700">RESERVA DEMO</text>
+      <text x="785" y="402" fill="#0c5f57" font-family="Arial,sans-serif" font-size="20" font-weight="700">APROBADO · PRUEBA</text>
     </svg>`;
     const file = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
     const downloadUrl = URL.createObjectURL(file);

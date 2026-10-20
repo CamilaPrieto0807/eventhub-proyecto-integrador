@@ -157,6 +157,7 @@ function serializeReservation(row) {
     quantity: row.quantity,
     unitPrice: row.unit_price,
     total: row.total,
+    paymentMethod: row.payment_method,
     status: row.status,
     date: row.created_at
   };
@@ -222,16 +223,17 @@ api.post('/auth/register', validateOrigin, async (req, res) => {
 api.post('/auth/login', validateOrigin, loginLimiter, async (req, res) => {
   const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
   const password = req.body.password;
-  if (!email || typeof password !== 'string') {
-    throw apiError(400, 'Ingresa tu correo y contraseña.');
+  const role = req.body.role;
+  if (!email || typeof password !== 'string' || !['cliente', 'agente', 'administrador'].includes(role)) {
+    throw apiError(400, 'Ingresa tu correo, contraseña y tipo de cuenta.');
   }
 
   const { rows } = await pool.query(
     'SELECT id, name, email, role, password_hash FROM users WHERE lower(email) = $1',
     [email]
   );
-  if (!rows[0] || !(await bcrypt.compare(password, rows[0].password_hash))) {
-    throw apiError(401, 'Correo o contraseña incorrectos.');
+  if (!rows[0] || rows[0].role !== role || !(await bcrypt.compare(password, rows[0].password_hash))) {
+    throw apiError(401, 'Correo, contraseña o tipo de cuenta incorrectos.');
   }
 
   const user = serializeUser(rows[0]);
@@ -496,7 +498,7 @@ api.patch('/admin/clients/:id/agent', validateOrigin, requireUser, requireAdmin,
 api.get('/reservations', requireUser, async (req, res) => {
   const { rows } = await pool.query(
     `SELECT r.id, r.event_id, e.name AS event_name, r.quantity, r.unit_price,
-            r.total, r.status, r.created_at
+            r.total, r.payment_method, r.status, r.created_at
      FROM reservations r
      JOIN events e ON e.id = r.event_id
      WHERE r.user_id = $1
@@ -509,7 +511,7 @@ api.get('/reservations', requireUser, async (req, res) => {
 api.get('/reservations/:id', requireUser, async (req, res) => {
   const { rows } = await pool.query(
     `SELECT r.id, r.event_id, e.name AS event_name, r.quantity, r.unit_price,
-            r.total, r.status, r.created_at
+            r.total, r.payment_method, r.status, r.created_at
      FROM reservations r
      JOIN events e ON e.id = r.event_id
      WHERE r.id = $1 AND r.user_id = $2`,
@@ -522,8 +524,12 @@ api.get('/reservations/:id', requireUser, async (req, res) => {
 api.post('/reservations', validateOrigin, requireUser, async (req, res) => {
   const eventId = typeof req.body.eventId === 'string' ? req.body.eventId : '';
   const quantity = req.body.quantity;
+  const paymentMethod = req.body.paymentMethod;
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10) {
     throw apiError(400, 'La cantidad debe ser un número entre 1 y 10.');
+  }
+  if (!['card', 'pse'].includes(paymentMethod)) {
+    throw apiError(400, 'Selecciona un medio de pago para la simulación.');
   }
 
   const client = await pool.connect();
@@ -546,10 +552,10 @@ api.post('/reservations', validateOrigin, requireUser, async (req, res) => {
 
     const event = eventResult.rows[0];
     const { rows } = await client.query(
-      `INSERT INTO reservations (user_id, event_id, quantity, unit_price, total)
-       VALUES ($1, $2, $3, $4, $3::integer * $4::integer)
-       RETURNING id, event_id, quantity, unit_price, total, status, created_at`,
-      [req.session.user.id, event.id, quantity, event.price]
+      `INSERT INTO reservations (user_id, event_id, quantity, unit_price, total, payment_method)
+       VALUES ($1, $2, $3, $4, $3::integer * $4::integer, $5)
+       RETURNING id, event_id, quantity, unit_price, total, payment_method, status, created_at`,
+      [req.session.user.id, event.id, quantity, event.price, paymentMethod]
     );
     await client.query('COMMIT');
     res.status(201).json({
