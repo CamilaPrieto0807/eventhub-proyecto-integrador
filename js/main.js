@@ -493,14 +493,14 @@ async function renderProfile() {
   const adminPanel = document.getElementById('adminAforo');
   const agentPanel = document.getElementById('agentClients');
   const adminUsersPanel = document.getElementById('adminUsers');
+  if (agentPanel) agentPanel.hidden = user.role !== 'agente';
+  if (adminUsersPanel) adminUsersPanel.hidden = user.role !== 'administrador';
+  if (adminPanel) adminPanel.hidden = user.role !== 'administrador';
   if (user.role === 'agente' && agentPanel) await renderAssignedClients(agentPanel);
   if (user.role === 'administrador') {
     if (adminUsersPanel) await renderAdminUsers(adminUsersPanel, user);
     if (adminPanel) await renderInventoryManager(adminPanel);
   }
-  if (agentPanel && user.role !== 'agente') agentPanel.hidden = true;
-  if (adminUsersPanel && user.role !== 'administrador') adminUsersPanel.hidden = true;
-  if (adminPanel && user.role !== 'administrador') adminPanel.hidden = true;
 }
 
 async function renderAssignedClients(panel) {
