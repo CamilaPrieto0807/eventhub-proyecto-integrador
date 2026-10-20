@@ -547,7 +547,7 @@ api.post('/reservations', validateOrigin, requireUser, async (req, res) => {
     const event = eventResult.rows[0];
     const { rows } = await client.query(
       `INSERT INTO reservations (user_id, event_id, quantity, unit_price, total)
-       VALUES ($1, $2, $3, $4, $3 * $4)
+       VALUES ($1, $2, $3, $4, $3::integer * $4::integer)
        RETURNING id, event_id, quantity, unit_price, total, status, created_at`,
       [req.session.user.id, event.id, quantity, event.price]
     );
