@@ -52,6 +52,31 @@
           <ul id="reservasLista" class="reservation-list"></ul>
           <a class="btn btn-ghost" href="eventos.html">Explorar eventos</a>
         </section>
+        <section class="profile-panel" id="agentClients" aria-labelledby="agentClientsTitle" hidden>
+          <h2 id="agentClientsTitle">Mis clientes asignados</h2>
+          <p>Solo puedes consultar los clientes que te asignó un administrador.</p>
+          <ul id="assignedClientsList" class="reservation-list"></ul>
+          <p class="form-feedback" role="status" hidden></p>
+        </section>
+        <section class="profile-panel" id="adminUsers" aria-labelledby="adminUsersTitle" hidden>
+          <h2 id="adminUsersTitle">Administración de cuentas</h2>
+          <h3>Administradores</h3>
+          <ul id="adminsList" class="reservation-list"></ul>
+          <form id="addAdminForm">
+            <div class="field">
+              <label for="adminEmail">Agregar una cuenta registrada como administradora</label>
+              <input type="email" id="adminEmail" name="email" required autocomplete="email" placeholder="correo@ejemplo.com">
+            </div>
+            <button type="submit" class="btn btn-primary">Agregar administrador</button>
+            <p class="form-feedback" id="adminManagementFeedback" role="status" hidden></p>
+          </form>
+          <h3>Agentes registrados</h3>
+          <ul id="agentsList" class="reservation-list"></ul>
+          <h3>Asignar clientes a agentes</h3>
+          <p>Un cliente solo puede estar asignado a un agente. Puedes cambiar o quitar la asignación.</p>
+          <div id="clientAssignments" class="inventory-list"></div>
+          <p class="form-feedback" id="assignmentFeedback" role="status" hidden></p>
+        </section>
         <section class="profile-panel" id="adminAforo" aria-labelledby="adminTitulo">
           <h2 id="adminTitulo">Administración de aforo</h2>
           <p>Define el máximo de entradas por evento. No puedes reducirlo por debajo de las ya vendidas.</p>

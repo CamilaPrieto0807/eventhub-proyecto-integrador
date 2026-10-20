@@ -310,7 +310,13 @@ api.get('/agent/clients', requireUser, requireAgent, async (req, res) => {
 });
 
 api.get('/admin/users', requireUser, requireAdmin, async (req, res) => {
-  const [agents, clients] = await Promise.all([
+  const [admins, agents, clients] = await Promise.all([
+    pool.query(
+      `SELECT id, name, email
+       FROM users
+       WHERE role = 'administrador'
+       ORDER BY lower(name), lower(email)`
+    ),
     pool.query(
       `SELECT agent.id, agent.name, agent.email, count(client.id)::integer AS client_count
        FROM users agent
@@ -328,6 +334,11 @@ api.get('/admin/users', requireUser, requireAdmin, async (req, res) => {
     )
   ]);
   res.json({
+    admins: admins.rows.map((admin) => ({
+      id: admin.id,
+      name: admin.name,
+      email: admin.email
+    })),
     agents: agents.rows.map((agent) => ({
       id: agent.id,
       name: agent.name,
@@ -341,6 +352,115 @@ api.get('/admin/users', requireUser, requireAdmin, async (req, res) => {
       agentId: client.assigned_agent_id
     }))
   });
+});
+
+api.post('/admin/admins', validateOrigin, requireUser, requireAdmin, async (req, res) => {
+  const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw apiError(400, 'Ingresa un correo electrónico válido.');
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock($1)', [71930421]);
+    const account = await client.query(
+      'SELECT id, name, email, role FROM users WHERE lower(email) = $1 FOR UPDATE',
+      [email]
+    );
+    if (!account.rows[0]) throw apiError(404, 'No existe una cuenta con ese correo. Pídele que se registre primero.');
+    if (account.rows[0].role === 'administrador') {
+      throw apiError(409, 'Esa cuenta ya es administradora.');
+    }
+
+    if (account.rows[0].role === 'agente') {
+      const assignedClients = await client.query(
+        "SELECT count(*)::integer AS total FROM users WHERE role = 'cliente' AND assigned_agent_id = $1",
+        [account.rows[0].id]
+      );
+      if (assignedClients.rows[0].total > 0) {
+        throw apiError(409, 'Reasigna primero los clientes de esta persona a otro agente.');
+      }
+    }
+
+    const { rows } = await client.query(
+      `UPDATE users SET role = 'administrador', assigned_agent_id = NULL
+       WHERE id = $1
+       RETURNING id, name, email`,
+      [account.rows[0].id]
+    );
+    await client.query(
+      "DELETE FROM user_sessions WHERE sess->'user'->>'id' = $1",
+      [rows[0].id]
+    );
+    await client.query('COMMIT');
+    res.status(201).json({
+      admin: rows[0],
+      message: 'Rol de administrador asignado. La cuenta debe volver a iniciar sesión.'
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+});
+
+api.delete('/admin/admins/:id', validateOrigin, requireUser, requireAdmin, async (req, res) => {
+  const adminId = req.params.id;
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidPattern.test(adminId)) {
+    throw apiError(400, 'El identificador del administrador no es válido.');
+  }
+  if (adminId === req.session.user.id) {
+    throw apiError(400, 'No puedes eliminar tu propia cuenta de administrador.');
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock($1)', [71930421]);
+    const target = await client.query(
+      "SELECT id, email FROM users WHERE id = $1 AND role = 'administrador' FOR UPDATE",
+      [adminId]
+    );
+    if (!target.rows[0]) throw apiError(404, 'No encontramos ese administrador.');
+
+    const count = await client.query(
+      "SELECT count(*)::integer AS total FROM users WHERE role = 'administrador'"
+    );
+    if (count.rows[0].total <= 1) {
+      throw apiError(409, 'No se puede eliminar al último administrador de la aplicación.');
+    }
+
+    await client.query(
+      `UPDATE events AS event
+       SET sold = event.sold - reservations.quantity
+       FROM (
+         SELECT event_id, sum(quantity)::integer AS quantity
+         FROM reservations
+         WHERE user_id = $1
+         GROUP BY event_id
+       ) AS reservations
+       WHERE event.id = reservations.event_id`,
+      [adminId]
+    );
+    await client.query(
+      `DELETE FROM user_sessions WHERE sess->'user'->>'id' = $1`,
+      [adminId]
+    );
+    await client.query('DELETE FROM reservations WHERE user_id = $1', [adminId]);
+    await client.query('DELETE FROM users WHERE id = $1', [adminId]);
+    await client.query('COMMIT');
+    res.json({
+      message: `La cuenta ${target.rows[0].email} y sus reservas de demostración fueron eliminadas.`
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 });
 
 api.patch('/admin/clients/:id/agent', validateOrigin, requireUser, requireAdmin, async (req, res) => {
@@ -409,6 +529,8 @@ api.post('/reservations', validateOrigin, requireUser, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    const account = await client.query('SELECT id FROM users WHERE id = $1 FOR UPDATE', [req.session.user.id]);
+    if (!account.rowCount) throw apiError(401, 'La cuenta ya no está disponible. Inicia sesión de nuevo.');
     const eventResult = await client.query(
       `UPDATE events
        SET sold = sold + $1

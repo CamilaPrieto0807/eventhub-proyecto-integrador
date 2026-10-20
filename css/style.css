@@ -704,6 +704,7 @@ h1, h2, h3 {
 }
 .inventory-row label { font-weight: 600; }
 .inventory-row input,
+.inventory-row select,
 .checkout-card input {
   width: 100%;
   padding: 12px 14px;
@@ -833,7 +834,7 @@ h1, h2, h3 {
   .auth-card { padding: 36px 32px 28px; }
   .profile-layout { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .profile-layout > .demo-notice { grid-column: 1 / -1; }
-  .inventory-row { grid-template-columns: minmax(0, 1fr) 110px auto; }
+  .inventory-row { grid-template-columns: minmax(0, 1fr) minmax(160px, 1fr) auto; }
 }
 
 /* =========================================

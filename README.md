@@ -18,7 +18,9 @@ Express y PostgreSQL en Neon.
 3. Copia la cadena de conexión PostgreSQL de Neon con **Pooled connection** activado para usarla como `DATABASE_URL`. Mantén `sslmode=require` y no publiques esta cadena.
 
 El backend también ejecuta el esquema al iniciar para asegurar que las tablas y
-los eventos existan.
+los eventos existan. Al volver a desplegar el backend, el cambio de asignación
+agrega automáticamente la columna de agente a una tabla `users` existente sin
+borrar usuarios, eventos ni reservas.
 
 ## Ejecutar el backend localmente
 
@@ -75,15 +77,30 @@ Render, pon la URL HTTPS de la API en `js/config.js` y usa
 `COOKIE_SAME_SITE=none`; algunos navegadores pueden bloquear cookies entre
 sitios, por lo que se recomienda el proxy.
 
-Para dar acceso administrativo, primero registra una cuenta y ejecuta desde
-`backend/`:
+## Administrar cuentas de administrador
+
+Un administrador puede gestionar otros administradores desde **Mi perfil → Administración de cuentas**:
+
+1. Registra primero la cuenta que quieres agregar como cliente o agente.
+2. Entra como administrador, abre **Mi perfil → Administración de cuentas** e
+   ingresa el correo registrado en **Administradores**.
+3. Esa persona debe cerrar sesión y volver a ingresar para obtener su nuevo rol.
+4. Para eliminar otra cuenta, pulsa **Eliminar cuenta** y confirma. Se elimina
+   la cuenta, se cierran sus sesiones y se borran sus reservas de demostración;
+   esas entradas se liberan. No se puede eliminar tu propia cuenta desde esa
+   sesión ni al último administrador.
+
+El registro público no ofrece el rol administrador. Para el primer administrador
+o recuperación de acceso, se puede usar el comando de bootstrap en `backend/`:
 
 ```powershell
 npm run admin:promote -- correo@ejemplo.com
 ```
 
-Ese comando usa `DATABASE_URL` y eleva solo la cuenta indicada. El registro
-público no permite crear administradores.
+Requiere que la cuenta ya esté registrada y que `backend/.env` contenga
+`DATABASE_URL`. Un administrador también puede asignar clientes a agentes; cada
+agente ve únicamente sus clientes asignados, y el cliente conserva su perfil y
+sus compras normales.
 
 ## Alcance de seguridad y pagos
 

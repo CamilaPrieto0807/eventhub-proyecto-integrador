@@ -491,8 +491,174 @@ async function renderProfile() {
   }
 
   const adminPanel = document.getElementById('adminAforo');
-  if (adminPanel && user.role === 'administrador') await renderInventoryManager(adminPanel);
+  const agentPanel = document.getElementById('agentClients');
+  const adminUsersPanel = document.getElementById('adminUsers');
+  if (user.role === 'agente' && agentPanel) await renderAssignedClients(agentPanel);
+  if (user.role === 'administrador') {
+    if (adminUsersPanel) await renderAdminUsers(adminUsersPanel, user);
+    if (adminPanel) await renderInventoryManager(adminPanel);
+  }
+  if (agentPanel && user.role !== 'agente') agentPanel.hidden = true;
+  if (adminUsersPanel && user.role !== 'administrador') adminUsersPanel.hidden = true;
   if (adminPanel && user.role !== 'administrador') adminPanel.hidden = true;
+}
+
+async function renderAssignedClients(panel) {
+  const list = panel.querySelector('#assignedClientsList');
+  try {
+    const { clients } = await apiRequest('/agent/clients');
+    if (!clients.length) {
+      list.textContent = 'Todavía no tienes clientes asignados. Pide al administrador que te asigne clientes.';
+      return;
+    }
+    clients.forEach((client) => {
+      const item = document.createElement('li');
+      const details = document.createElement('p');
+      details.textContent = `${client.name} · ${client.email}`;
+      item.append(details);
+      list.append(item);
+    });
+  } catch (error) {
+    showFeedback(panel.querySelector('.form-feedback'), `No se pudieron cargar tus clientes: ${error.message}`, true);
+  }
+}
+
+async function renderAdminUsers(panel, currentUser) {
+  const adminsList = panel.querySelector('#adminsList');
+  const agentsList = panel.querySelector('#agentsList');
+  const assignments = panel.querySelector('#clientAssignments');
+  const feedback = panel.querySelector('#assignmentFeedback');
+  const adminFeedback = panel.querySelector('#adminManagementFeedback');
+  const addAdminForm = panel.querySelector('#addAdminForm');
+  adminsList.replaceChildren();
+  agentsList.replaceChildren();
+  assignments.replaceChildren();
+
+  if (addAdminForm && addAdminForm.dataset.bound !== 'true') {
+    addAdminForm.dataset.bound = 'true';
+    addAdminForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!addAdminForm.reportValidity()) return;
+      const button = addAdminForm.querySelector('[type="submit"]');
+      button.disabled = true;
+      try {
+        const { admin } = await apiRequest('/admin/admins', {
+          method: 'POST',
+          body: JSON.stringify({ email: addAdminForm.elements.email.value.trim() })
+        });
+        addAdminForm.reset();
+        showFeedback(adminFeedback, `${admin.name} (${admin.email}) ahora es administrador. Debe cerrar sesión y volver a ingresar.`);
+        await renderAdminUsers(panel, currentUser);
+      } catch (error) {
+        showFeedback(adminFeedback, error.message || 'No se pudo agregar el administrador.', true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+
+  try {
+    const { admins, agents, clients } = await apiRequest('/admin/users');
+    admins.forEach((admin) => {
+      const item = document.createElement('li');
+      const details = document.createElement('p');
+      details.textContent = `${admin.name} · ${admin.email}${admin.id === currentUser.id ? ' · Tu cuenta' : ''}`;
+      item.append(details);
+
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'btn btn-ghost';
+      removeButton.textContent = 'Eliminar cuenta';
+      removeButton.disabled = admin.id === currentUser.id;
+      if (admin.id === currentUser.id) {
+        removeButton.title = 'No puedes eliminar tu propia cuenta desde esta sesión.';
+      }
+      removeButton.addEventListener('click', async () => {
+        const confirmed = window.confirm(
+          `¿Eliminar por completo la cuenta de ${admin.name} (${admin.email})?\n\n` +
+          'Se eliminarán también sus reservas de demostración, se liberarán esas entradas y se cerrará su sesión. Esta acción no se puede deshacer.'
+        );
+        if (!confirmed) return;
+        removeButton.disabled = true;
+        try {
+          const result = await apiRequest(`/admin/admins/${encodeURIComponent(admin.id)}`, {
+            method: 'DELETE'
+          });
+          showFeedback(adminFeedback, result.message);
+          await renderAdminUsers(panel, currentUser);
+        } catch (error) {
+          showFeedback(adminFeedback, error.message || 'No se pudo eliminar la cuenta.', true);
+        } finally {
+          removeButton.disabled = admin.id === currentUser.id;
+        }
+      });
+      item.append(removeButton);
+      adminsList.append(item);
+    });
+
+    if (!agents.length) {
+      agentsList.textContent = 'No hay agentes registrados. Pueden crear una cuenta seleccionando el tipo Agente.';
+    } else {
+      agents.forEach((agent) => {
+        const item = document.createElement('li');
+        const details = document.createElement('p');
+        details.textContent = `${agent.name} · ${agent.email} · ${agent.clientCount} cliente(s) asignado(s)`;
+        item.append(details);
+        agentsList.append(item);
+      });
+    }
+
+    if (!clients.length) {
+      assignments.textContent = 'Todavía no hay clientes registrados.';
+      return;
+    }
+
+    clients.forEach((client) => {
+      const row = document.createElement('div');
+      row.className = 'inventory-row';
+      const label = document.createElement('label');
+      label.textContent = `${client.name} · ${client.email}`;
+
+      const select = document.createElement('select');
+      select.setAttribute('aria-label', `Agente asignado a ${client.name}`);
+      const unassigned = document.createElement('option');
+      unassigned.value = '';
+      unassigned.textContent = 'Sin agente asignado';
+      select.append(unassigned);
+
+      agents.forEach((agent) => {
+        const option = document.createElement('option');
+        option.value = agent.id;
+        option.textContent = `${agent.name} · ${agent.email}`;
+        select.append(option);
+      });
+      select.value = client.agentId || '';
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'btn btn-ghost';
+      button.textContent = 'Guardar asignación';
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        try {
+          await apiRequest(`/admin/clients/${encodeURIComponent(client.id)}/agent`, {
+            method: 'PATCH',
+            body: JSON.stringify({ agentId: select.value || null })
+          });
+          showFeedback(feedback, `Asignación actualizada para ${client.name}.`);
+          await renderAdminUsers(panel, currentUser);
+        } catch (error) {
+          showFeedback(feedback, error.message || 'No se pudo asignar el cliente.', true);
+        } finally {
+          button.disabled = false;
+        }
+      });
+      row.append(label, select, button);
+      assignments.append(row);
+    });
+  } catch (error) {
+    showFeedback(feedback, `No se pudieron cargar agentes y clientes: ${error.message}`, true);
+  }
 }
 
 async function renderInventoryManager(panel) {
